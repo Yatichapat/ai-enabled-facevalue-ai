@@ -1,65 +1,60 @@
-import Image from "next/image";
+import { Camera, CloudUpload } from 'lucide-react';
+import React from 'react';
+import Navbar from './components/Navbar';
 
 export default function Home() {
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
+    <div className="min-h-screen bg-white font-sans text-gray-900 flex flex-col relative overflow-hidden">
+      {/* Background gradients */}
+      <div className="absolute bottom-0 left-[-10%] w-[500px] h-[500px] bg-[#f8d0d6] rounded-full filter blur-[100px] opacity-60 pointer-events-none"></div>
+      <div className="absolute bottom-0 right-[-10%] w-[500px] h-[500px] bg-[#fceac2] rounded-full filter blur-[100px] opacity-60 pointer-events-none"></div>
+
+      <div className="relative z-10 flex flex-col min-h-screen">
+        <Navbar />
+
+        {/* Main Content */}
+        <main className="flex-1 flex flex-col items-center py-16 px-6">
+          <div className="flex flex-col md:flex-row gap-8 md:gap-12 w-full max-w-6xl justify-center mb-16">
+            {/* Card 1 */}
+            <div className="bg-[#fdf3db] border-[3px] border-dashed border-[#c0862a] rounded-md p-10 flex flex-col items-center justify-center aspect-square md:aspect-auto w-full md:w-[500px] md:h-[500px] bg-opacity-90">
+              <Camera size={56} strokeWidth={1.5} className="mb-4 text-[#222]" />
+              <h2 className="text-lg font-bold mb-10 text-[#1a1a1a]">Tap to take a photo</h2>
+              
+              <div className="w-full flex items-center mb-10 px-8">
+                <div className="flex-1 border-t border-[#e2d5d5]"></div>
+                <span className="px-4 text-xs font-semibold text-[#a89b9b] uppercase tracking-widest">OR</span>
+                <div className="flex-1 border-t border-[#e2d5d5]"></div>
+              </div>
+
+              <button className="bg-white border-[1px] border-[#a4947f] rounded-xl py-3 px-10 shadow-md hover:shadow-lg transition-shadow font-serif text-[#8f6d54] text-xl">
+                Upload
+              </button>
+            </div>
+
+            {/* Card 2 */}
+            <div className="bg-[#fae7e7] border-[3px] border-dashed border-[#dea0a0] rounded-md p-10 flex flex-col items-center justify-center aspect-square md:aspect-auto w-full md:w-[500px] md:h-[500px] bg-opacity-90">
+              <CloudUpload size={56} strokeWidth={1.5} className="mb-4 text-[#222]" />
+              <h2 className="text-lg font-bold text-[#1a1a1a]">Tap to upload reference</h2>
+              <p className="text-xs text-[#a09494] mb-10 mt-1 font-medium tracking-wide">PNG, JPG or PDF</p>
+              
+              <div className="w-full flex items-center mb-10 px-8">
+                <div className="flex-1 border-t border-[#e2d5d5]"></div>
+                <span className="px-4 text-xs font-semibold text-[#a89b9b] uppercase tracking-widest">OR</span>
+                <div className="flex-1 border-t border-[#e2d5d5]"></div>
+              </div>
+
+              <button className="bg-white border-[1px] border-[#a4947f] rounded-xl py-3 px-10 shadow-md hover:shadow-lg transition-shadow font-serif text-[#8f6d54] text-xl">
+                Upload
+              </button>
+            </div>
+          </div>
+
+          {/* Start Button */}
+          <button className="bg-white border-[1px] border-[#a4947f] rounded-2xl py-4 w-[280px] sm:w-[400px] md:w-[500px] shadow-md hover:shadow-lg transition-shadow font-serif text-[#8f6d54] text-2xl tracking-wide flex justify-center mx-auto">
+            Start Analyzing
+          </button>
+        </main>
+      </div>
     </div>
   );
 }
