@@ -98,7 +98,7 @@ export default function Home() {
                   e.stopPropagation();
                   openFileUpload('face');
                 }}
-                className="bg-white border-[1px] border-[#a4947f] rounded-xl py-3 px-10 shadow-md hover:shadow-lg transition-shadow font-serif text-[#8f6d54] text-xl"
+                className="cursor-pointer bg-white border-[1px] border-[#a4947f] rounded-xl py-3 px-10 shadow-md hover:shadow-lg transition-shadow font-serif text-[#8f6d54] text-xl"
               >
                 Upload
               </button>
@@ -124,7 +124,7 @@ export default function Home() {
                   e.stopPropagation();
                   openFileUpload('reference');
                 }}
-                className="bg-white border-[1px] border-[#a4947f] rounded-xl py-3 px-10 shadow-md hover:shadow-lg transition-shadow font-serif text-[#8f6d54] text-xl"
+                className="cursor-pointer bg-white border-[1px] border-[#a4947f] rounded-xl py-3 px-10 shadow-md hover:shadow-lg transition-shadow font-serif text-[#8f6d54] text-xl"
               >
                 Upload
               </button>
@@ -132,7 +132,7 @@ export default function Home() {
           </div>
 
           {/* Start Button */}
-          <button className="bg-white border-[1px] border-[#a4947f] rounded-2xl py-4 w-[280px] sm:w-[400px] md:w-[500px] shadow-md hover:shadow-lg transition-shadow font-serif text-[#8f6d54] text-2xl tracking-wide flex justify-center mx-auto">
+          <button className="cursor-pointer bg-white border-[1px] border-[#a4947f] rounded-2xl py-4 w-[280px] sm:w-[400px] md:w-[500px] shadow-md hover:shadow-lg transition-shadow font-serif text-[#8f6d54] text-2xl tracking-wide flex justify-center mx-auto">
             Start Analyzing
           </button>
         </main>
