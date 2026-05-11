@@ -55,6 +55,8 @@ async def analyze_faces(
         "similarity_score": deviation_scores.get("overall_similarity"),
         "average_difference": deviation_scores.get("average_difference"),
         "mean_deviation": deviation_scores.get("mean_deviation"),
+        "alignment": deviation_scores.get("alignment"),
+        "quality": deviation_scores.get("quality"),
         "deviation_by_region": deviation_scores.get("regions"),
         "region_differences": deviation_scores.get("region_details"),
         "procedures": priced_result["procedures"],
