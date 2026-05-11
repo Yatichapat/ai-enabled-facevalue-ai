@@ -30,7 +30,7 @@ async def analyze_faces(
     if user_img is None or ref_img is None:
         raise HTTPException(status_code=400, detail="Invalid image format or no face detected")
 
-    # 2. Detect landmarks (468 points each)
+    # 2. Detect landmarks with MediaPipe Face Mesh
     user_landmarks = detect_landmarks(user_img)
     ref_landmarks = detect_landmarks(ref_img)
 
@@ -53,8 +53,10 @@ async def analyze_faces(
 
     return JSONResponse({
         "similarity_score": deviation_scores.get("overall_similarity"),
+        "average_difference": deviation_scores.get("average_difference"),
         "mean_deviation": deviation_scores.get("mean_deviation"),
         "deviation_by_region": deviation_scores.get("regions"),
+        "region_differences": deviation_scores.get("region_details"),
         "procedures": priced_result["procedures"],
         "package_summary": priced_result["package_summary"],
         "morphed_image": morphed_b64,  # base64 PNG
