@@ -7,8 +7,17 @@ from app.services.procedure_mapper import map_procedures
 from app.services.price_estimator import estimate_prices
 from app.services.face_morpher import generate_morph
 import base64
+import cv2
 
 router = APIRouter()
+
+
+def _encode_png_base64(image) -> str | None:
+    success, buffer = cv2.imencode(".png", image)
+    if not success:
+        return None
+
+    return base64.b64encode(buffer).decode("utf-8")
 
 
 @router.post("/analyze")
@@ -50,6 +59,8 @@ async def analyze_faces(
 
     # 6. Generate morphed preview image
     morphed_b64 = generate_morph(user_img, user_landmarks, ref_landmarks, alpha=0.5)
+    analyzed_user_image_b64 = _encode_png_base64(user_img)
+    analyzed_reference_image_b64 = _encode_png_base64(ref_img)
 
     return JSONResponse({
         "similarity_score": deviation_scores.get("overall_similarity"),
@@ -59,7 +70,10 @@ async def analyze_faces(
         "quality": deviation_scores.get("quality"),
         "deviation_by_region": deviation_scores.get("regions"),
         "region_differences": deviation_scores.get("region_details"),
+        "face_region_anchors": deviation_scores.get("face_region_anchors"),
         "procedures": priced_result["procedures"],
         "package_summary": priced_result["package_summary"],
+        "analyzed_user_image": analyzed_user_image_b64,
+        "analyzed_reference_image": analyzed_reference_image_b64,
         "morphed_image": morphed_b64,  # base64 PNG
     })

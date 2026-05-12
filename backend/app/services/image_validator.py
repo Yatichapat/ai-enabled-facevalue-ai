@@ -1,7 +1,23 @@
 """Image validation and loading utility."""
 import cv2
 import numpy as np
-from io import BytesIO
+
+
+MAX_IMAGE_SIDE = 1200
+
+
+def _resize_if_needed(image: np.ndarray, max_side: int = MAX_IMAGE_SIDE) -> np.ndarray:
+    """Resize oversized images while preserving aspect ratio."""
+    height, width = image.shape[:2]
+    longest_side = max(height, width)
+
+    if longest_side <= max_side:
+        return image
+
+    scale = max_side / float(longest_side)
+    new_width = max(1, int(round(width * scale)))
+    new_height = max(1, int(round(height * scale)))
+    return cv2.resize(image, (new_width, new_height), interpolation=cv2.INTER_AREA)
 
 
 def validate_image(image_bytes: bytes) -> np.ndarray | None:
@@ -27,7 +43,7 @@ def validate_image(image_bytes: bytes) -> np.ndarray | None:
         height, width = img.shape[:2]
         if height < 100 or width < 100:
             return None
-        
-        return img
+
+        return _resize_if_needed(img)
     except Exception:
         return None
