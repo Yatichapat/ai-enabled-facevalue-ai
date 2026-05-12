@@ -308,22 +308,7 @@ export default function Home() {
                         <CloudUpload size={56} strokeWidth={1.5} className="mb-4 text-[#222]" />
                         <h2 className="text-lg font-bold text-[#1a1a1a]">Tap to upload reference</h2>
                         <p className="text-xs text-[#a09494] mb-2 mt-1 font-medium tracking-wide">PNG or JPG</p>
-                        
-                        <div className="w-full flex items-center mb-10 px-8">
-                          <div className="flex-1 border-t border-[#e2d5d5]"></div>
-                          <span className="px-4 text-xs font-semibold text-[#a89b9b] uppercase tracking-widest">OR</span>
-                          <div className="flex-1 border-t border-[#e2d5d5]"></div>
-                        </div>
-
-                        <button 
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            openFileUpload('reference');
-                          }}
-                          className="cursor-pointer bg-white border-[1px] border-[#a4947f] rounded-xl py-3 px-10 shadow-md hover:shadow-lg transition-shadow font-serif text-[#8f6d54] text-xl"
-                        >
-                          Upload
-                        </button>
+                      
                       </>
                     )}
                   </div>
