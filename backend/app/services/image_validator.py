@@ -3,7 +3,7 @@ import cv2
 import numpy as np
 
 
-MAX_IMAGE_SIDE = 1200
+MAX_IMAGE_SIDE = 1600
 
 
 def _resize_if_needed(image: np.ndarray, max_side: int = MAX_IMAGE_SIDE) -> np.ndarray:
