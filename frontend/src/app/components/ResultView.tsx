@@ -82,12 +82,8 @@ export default function ResultView({ faceImageUrl, referenceImageUrl, analysisRe
 
   const faceRegionAnchors = analysisResult.face_region_anchors ?? FALLBACK_ANCHORS;
   const [animatedAnchors, setAnimatedAnchors] = useState(FALLBACK_ANCHORS);
-  const displayedFaceImageUrl = analysisResult.analyzed_user_image
-    ? `data:image/png;base64,${analysisResult.analyzed_user_image}`
-    : faceImageUrl;
-  const displayedReferenceImageUrl = analysisResult.analyzed_reference_image
-    ? `data:image/png;base64,${analysisResult.analyzed_reference_image}`
-    : referenceImageUrl;
+  const displayedFaceImageUrl = analysisResult.analyzed_user_image ?? faceImageUrl;
+  const displayedReferenceImageUrl = analysisResult.analyzed_reference_image ?? referenceImageUrl;
 
   const formatRegionLabel = (region: string) => region.charAt(0).toUpperCase() + region.slice(1);
   const getRegionDirection = (x: number) => (x >= 0.58 ? 'left' : 'right');
@@ -192,6 +188,7 @@ export default function ResultView({ faceImageUrl, referenceImageUrl, analysisRe
       <div ref={circleRef} className="relative flex flex-col md:flex-row gap-4 md:gap-8 justify-center items-center w-full max-w-4xl">
         <div ref={faceImageFrameRef} className="w-full md:w-1/2 aspect-[4/5] rounded-xl overflow-hidden border-[3px] border-[#8c6b52] relative shadow-lg">
           <img
+            key={displayedFaceImageUrl}
             src={displayedFaceImageUrl}
             alt="Your face"
             className="w-full h-full object-cover"
@@ -225,7 +222,7 @@ export default function ResultView({ faceImageUrl, referenceImageUrl, analysisRe
         
         
         <div className="w-full md:w-1/2 aspect-[4/5] rounded-xl overflow-hidden border-[3px] border-[#dea0a0] relative shadow-lg">
-          <img src={displayedReferenceImageUrl} alt="Reference face" className="w-full h-full object-cover" />
+          <img key={displayedReferenceImageUrl} src={displayedReferenceImageUrl} alt="Reference face" className="w-full h-full object-cover" />
         </div>
         
 

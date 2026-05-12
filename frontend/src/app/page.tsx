@@ -28,15 +28,72 @@ export default function Home() {
     return new File([blob], filename, { type: blob.type || 'image/jpeg' });
   };
 
+  const isDataUrlLikelyBlack = async (dataUrl: string) => {
+    const imageElement = new Image();
+    imageElement.src = dataUrl;
+
+    await new Promise<void>((resolve, reject) => {
+      imageElement.onload = () => resolve();
+      imageElement.onerror = () => reject(new Error('Invalid image data URL'));
+    });
+
+    const width = imageElement.naturalWidth || imageElement.width;
+    const height = imageElement.naturalHeight || imageElement.height;
+    if (!width || !height) {
+      return true;
+    }
+
+    const canvasElement = document.createElement('canvas');
+    canvasElement.width = width;
+    canvasElement.height = height;
+    const context = canvasElement.getContext('2d');
+    if (!context) {
+      return false;
+    }
+
+    context.drawImage(imageElement, 0, 0, width, height);
+    const pixels = context.getImageData(0, 0, width, height).data;
+    let totalLuminance = 0;
+    let sampledPixels = 0;
+    let darkPixels = 0;
+    const step = Math.max(16, Math.floor(pixels.length / 12000));
+
+    for (let index = 0; index < pixels.length; index += step) {
+      const r = pixels[index] ?? 0;
+      const g = pixels[index + 1] ?? 0;
+      const b = pixels[index + 2] ?? 0;
+      const luminance = 0.2126 * r + 0.7152 * g + 0.0722 * b;
+
+      totalLuminance += luminance;
+      if (luminance < 20) {
+        darkPixels += 1;
+      }
+      sampledPixels += 1;
+    }
+
+    const averageLuminance = sampledPixels > 0 ? totalLuminance / sampledPixels : 0;
+    const darkRatio = sampledPixels > 0 ? darkPixels / sampledPixels : 1;
+    return averageLuminance < 22 || darkRatio > 0.97;
+  };
+
   React.useEffect(() => {
     const restoreSavedImages = async () => {
       const savedFace = localStorage.getItem('saved_face_data_url');
       const savedReference = localStorage.getItem('saved_reference_data_url');
 
       if (savedFace) {
-        const file = await dataUrlToFile(savedFace, 'saved-face.jpg');
-        setFaceFile(file);
-        setFaceDataUrl(savedFace);
+        try {
+          const savedFaceLooksBlack = await isDataUrlLikelyBlack(savedFace);
+          if (!savedFaceLooksBlack) {
+            const file = await dataUrlToFile(savedFace, 'saved-face.jpg');
+            setFaceFile(file);
+            setFaceDataUrl(savedFace);
+          } else {
+            localStorage.removeItem('saved_face_data_url');
+          }
+        } catch {
+          localStorage.removeItem('saved_face_data_url');
+        }
       }
 
       if (savedReference) {
@@ -56,10 +113,20 @@ export default function Home() {
     }
 
     const setCapturedFile = async () => {
-      const capturedFile = await dataUrlToFile(capturedData, 'captured-face.jpg');
-      setFaceFile(capturedFile);
-      setFaceDataUrl(capturedData);
-      localStorage.setItem('saved_face_data_url', capturedData);
+      try {
+        const capturedLooksBlack = await isDataUrlLikelyBlack(capturedData);
+        if (!capturedLooksBlack) {
+          const capturedFile = await dataUrlToFile(capturedData, 'captured-face.jpg');
+          setFaceFile(capturedFile);
+          setFaceDataUrl(capturedData);
+          localStorage.setItem('saved_face_data_url', capturedData);
+        } else {
+          localStorage.removeItem('saved_face_data_url');
+          alert('The captured image looked invalid (too dark). Please take another photo.');
+        }
+      } catch {
+        localStorage.removeItem('saved_face_data_url');
+      }
       localStorage.removeItem('face_capture_data_url');
     };
 
@@ -168,59 +235,99 @@ export default function Home() {
               <div className="flex flex-col md:flex-row gap-8 md:gap-12 w-full max-w-6xl justify-center mb-16">
                 {/* Card 1 - Camera */}
                 <div 
-                  onClick={() => router.push('/camera')}
-                  className="cursor-pointer bg-[#fdf3db] border-[3px] border-dashed border-[#c0862a] rounded-md p-10 flex flex-col items-center justify-center aspect-square md:aspect-auto w-full md:w-[500px] md:h-[500px] bg-opacity-90 hover:shadow-lg transition-shadow"
+                  onClick={() => {
+                    if (!faceDataUrl) {
+                      router.push('/camera');
+                    }
+                  }}
+                  className="cursor-pointer bg-[#fdf3db]/90 border-[3px] border-dashed border-[#c0862a] rounded-md overflow-hidden aspect-square md:aspect-auto w-full md:w-[500px] md:h-[500px] hover:shadow-lg transition-shadow flex flex-col items-center justify-center"
                 >
-                  <Camera size={56} strokeWidth={1.5} className="mb-4 text-[#222]" />
-                  <h2 className="text-lg font-bold mb-10 text-[#1a1a1a]">Tap to take a photo</h2>
-                  {faceFile && (
-                    <p className="text-xs text-[#7b6a55] mb-4 font-medium">Selected: {faceFile.name}</p>
-                  )}
-                  
-                  <div className="w-full flex items-center mb-10 px-8">
-                    <div className="flex-1 border-t border-[#e2d5d5]"></div>
-                    <span className="px-4 text-xs font-semibold text-[#a89b9b] uppercase tracking-widest">OR</span>
-                    <div className="flex-1 border-t border-[#e2d5d5]"></div>
-                  </div>
+                  {faceDataUrl ? (
+                    <div className="w-full h-full relative group">
+                      <img src={faceDataUrl} alt="Face" className="w-full h-full object-cover" />
+                      <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 flex items-center justify-center transition-all">
+                        <button 
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            openFileUpload('face');
+                          }}
+                          className="opacity-0 group-hover:opacity-100 bg-white border-[1px] border-[#a4947f] rounded-xl py-2 px-6 shadow-md font-serif text-[#8f6d54]"
+                        >
+                          Change
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <>
+                      <Camera size={56} strokeWidth={1.5} className="mb-4 text-[#222]" />
+                      <h2 className="text-lg font-bold mb-10 text-[#1a1a1a]">Tap to take a photo</h2>
+                      
+                      <div className="w-full flex items-center mb-10 px-8">
+                        <div className="flex-1 border-t border-[#e2d5d5]"></div>
+                        <span className="px-4 text-xs font-semibold text-[#a89b9b] uppercase tracking-widest">OR</span>
+                        <div className="flex-1 border-t border-[#e2d5d5]"></div>
+                      </div>
 
-                  <button 
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      openFileUpload('face');
-                    }}
-                    className="cursor-pointer bg-white border-[1px] border-[#a4947f] rounded-xl py-3 px-10 shadow-md hover:shadow-lg transition-shadow font-serif text-[#8f6d54] text-xl"
-                  >
-                    Upload
-                  </button>
+                      <button 
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          openFileUpload('face');
+                        }}
+                        className="cursor-pointer bg-white border-[1px] border-[#a4947f] rounded-xl py-3 px-10 shadow-md hover:shadow-lg transition-shadow font-serif text-[#8f6d54] text-xl"
+                      >
+                        Upload
+                      </button>
+                    </>
+                  )}
                 </div>
 
                 {/* Card 2 - Reference Upload */}
                 <div 
-                  onClick={() => openFileUpload('reference')}
-                  className="cursor-pointer bg-[#fae7e7] border-[3px] border-dashed border-[#dea0a0] rounded-md p-10 flex flex-col items-center justify-center aspect-square md:aspect-auto w-full md:w-[500px] md:h-[500px] bg-opacity-90 hover:shadow-lg transition-shadow"
-                >
-                  <CloudUpload size={56} strokeWidth={1.5} className="mb-4 text-[#222]" />
-                  <h2 className="text-lg font-bold text-[#1a1a1a]">Tap to upload reference</h2>
-                  <p className="text-xs text-[#a09494] mb-2 mt-1 font-medium tracking-wide">PNG or JPG</p>
-                  {referenceFile && (
-                    <p className="text-xs text-[#8a6b6b] mb-8 font-medium">Selected: {referenceFile.name}</p>
-                  )}
-                  
-                  <div className="w-full flex items-center mb-10 px-8">
-                    <div className="flex-1 border-t border-[#e2d5d5]"></div>
-                    <span className="px-4 text-xs font-semibold text-[#a89b9b] uppercase tracking-widest">OR</span>
-                    <div className="flex-1 border-t border-[#e2d5d5]"></div>
-                  </div>
-
-                  <button 
-                    onClick={(e) => {
-                      e.stopPropagation();
+                  onClick={() => {
+                    if (!referenceDataUrl) {
                       openFileUpload('reference');
-                    }}
-                    className="cursor-pointer bg-white border-[1px] border-[#a4947f] rounded-xl py-3 px-10 shadow-md hover:shadow-lg transition-shadow font-serif text-[#8f6d54] text-xl"
-                  >
-                    Upload
-                  </button>
+                    }
+                  }}
+                  className="cursor-pointer bg-[#fae7e7]/90 border-[3px] border-dashed border-[#dea0a0] rounded-md overflow-hidden aspect-square md:aspect-auto w-full md:w-[500px] md:h-[500px] hover:shadow-lg transition-shadow flex flex-col items-center justify-center"
+                >
+                  {referenceDataUrl ? (
+                    <div className="w-full h-full relative group">
+                      <img src={referenceDataUrl} alt="Reference" className="w-full h-full object-cover" />
+                      <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 flex items-center justify-center transition-all">
+                        <button 
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            openFileUpload('reference');
+                          }}
+                          className="opacity-0 group-hover:opacity-100 bg-white border-[1px] border-[#a4947f] rounded-xl py-2 px-6 shadow-md font-serif text-[#8f6d54]"
+                        >
+                          Change
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <>
+                      <CloudUpload size={56} strokeWidth={1.5} className="mb-4 text-[#222]" />
+                      <h2 className="text-lg font-bold text-[#1a1a1a]">Tap to upload reference</h2>
+                      <p className="text-xs text-[#a09494] mb-2 mt-1 font-medium tracking-wide">PNG or JPG</p>
+                      
+                      <div className="w-full flex items-center mb-10 px-8">
+                        <div className="flex-1 border-t border-[#e2d5d5]"></div>
+                        <span className="px-4 text-xs font-semibold text-[#a89b9b] uppercase tracking-widest">OR</span>
+                        <div className="flex-1 border-t border-[#e2d5d5]"></div>
+                      </div>
+
+                      <button 
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          openFileUpload('reference');
+                        }}
+                        className="cursor-pointer bg-white border-[1px] border-[#a4947f] rounded-xl py-3 px-10 shadow-md hover:shadow-lg transition-shadow font-serif text-[#8f6d54] text-xl"
+                      >
+                        Upload
+                      </button>
+                    </>
+                  )}
                 </div>
               </div>
 
@@ -243,7 +350,7 @@ export default function Home() {
 
       {/* Upload Preview Modal */}
       {showPreview && pendingFile && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-6">
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-6">
           <div className="bg-white rounded-lg max-w-md w-full p-6 shadow-xl">
             <div className="flex justify-between items-center mb-4">
               <h3 className="text-xl font-bold text-[#1a1a1a]">

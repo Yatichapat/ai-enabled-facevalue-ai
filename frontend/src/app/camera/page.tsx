@@ -10,6 +10,51 @@ export default function CameraPage() {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [capturedImage, setCapturedImage] = useState<string | null>(null);
+  const [isCameraReady, setIsCameraReady] = useState(false);
+
+  const waitForNextVideoFrame = (videoElement: HTMLVideoElement) =>
+    new Promise<void>((resolve) => {
+      if ('requestVideoFrameCallback' in videoElement) {
+        (
+          videoElement as HTMLVideoElement & {
+            requestVideoFrameCallback: (callback: () => void) => number;
+          }
+        ).requestVideoFrameCallback(() => resolve());
+        return;
+      }
+
+      requestAnimationFrame(() => resolve());
+    });
+
+  const isFrameLikelyBlack = (
+    context: CanvasRenderingContext2D,
+    width: number,
+    height: number,
+  ) => {
+    const frame = context.getImageData(0, 0, width, height).data;
+    let totalLuminance = 0;
+    let sampledPixels = 0;
+    let darkPixels = 0;
+    const step = Math.max(16, Math.floor(frame.length / 12000));
+
+    for (let index = 0; index < frame.length; index += step) {
+      const r = frame[index] ?? 0;
+      const g = frame[index + 1] ?? 0;
+      const b = frame[index + 2] ?? 0;
+      const luminance = 0.2126 * r + 0.7152 * g + 0.0722 * b;
+
+      totalLuminance += luminance;
+      if (luminance < 20) {
+        darkPixels += 1;
+      }
+      sampledPixels += 1;
+    }
+
+    const averageLuminance = sampledPixels > 0 ? totalLuminance / sampledPixels : 0;
+    const darkRatio = sampledPixels > 0 ? darkPixels / sampledPixels : 1;
+
+    return averageLuminance < 22 || darkRatio > 0.97;
+  };
 
   const startCamera = async () => {
     try {
@@ -18,6 +63,16 @@ export default function CameraPage() {
       });
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
+        videoRef.current.onloadedmetadata = async () => {
+          try {
+            await videoRef.current?.play();
+          } catch (playError) {
+            console.error('Video play was interrupted:', playError);
+          }
+        };
+        videoRef.current.oncanplay = () => {
+          setIsCameraReady(true);
+        };
       }
     } catch (error) {
       console.error('Error accessing camera:', error);
@@ -29,17 +84,52 @@ export default function CameraPage() {
     if (videoRef.current && videoRef.current.srcObject) {
       const tracks = (videoRef.current.srcObject as MediaStream).getTracks();
       tracks.forEach(track => track.stop());
+      videoRef.current.srcObject = null;
     }
+    setIsCameraReady(false);
   };
 
-  const capturePhoto = () => {
-    if (videoRef.current && canvasRef.current) {
-      const context = canvasRef.current.getContext('2d');
+  const capturePhoto = async () => {
+    const videoElement = videoRef.current;
+    const canvasElement = canvasRef.current;
+
+    if (videoElement && canvasElement) {
+      const width = videoElement.videoWidth;
+      const height = videoElement.videoHeight;
+
+      if (!width || !height || videoElement.readyState < 2) {
+        alert('Camera is still loading. Please wait a moment and try again.');
+        return;
+      }
+
+      if (videoElement.paused) {
+        try {
+          await videoElement.play();
+        } catch (playError) {
+          console.error('Unable to resume camera before capture:', playError);
+        }
+      }
+
+      await waitForNextVideoFrame(videoElement);
+      await waitForNextVideoFrame(videoElement);
+
+      const context = canvasElement.getContext('2d');
       if (context) {
-        canvasRef.current.width = videoRef.current.videoWidth;
-        canvasRef.current.height = videoRef.current.videoHeight;
-        context.drawImage(videoRef.current, 0, 0);
-        const imageData = canvasRef.current.toDataURL('image/jpeg');
+        canvasElement.width = width;
+        canvasElement.height = height;
+        context.drawImage(videoElement, 0, 0, width, height);
+
+        if (isFrameLikelyBlack(context, width, height)) {
+          alert('Captured frame looks too dark. Please wait a moment and try again.');
+          return;
+        }
+
+        const imageData = canvasElement.toDataURL('image/jpeg', 0.95);
+        if (imageData === 'data:,') {
+          alert('Could not capture image. Please retake the photo.');
+          return;
+        }
+
         setCapturedImage(imageData);
         stopCamera();
       }
@@ -120,15 +210,17 @@ export default function CameraPage() {
                       ref={videoRef}
                       autoPlay
                       playsInline
+                      muted
                       className="w-full h-full object-cover"
                     />
                   </div>
                   <button
                     onClick={capturePhoto}
+                    disabled={!isCameraReady}
                     className="flex items-center justify-center gap-2 bg-[#c0862a] border-[1px] border-[#c0862a] rounded-xl py-3 px-8 shadow-md hover:shadow-lg transition-shadow font-serif text-white text-lg w-full"
                   >
                     <Camera size={20} />
-                    Capture Photo
+                    {isCameraReady ? 'Capture Photo' : 'Preparing Camera...'}
                   </button>
                 </div>
               )}

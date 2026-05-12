@@ -99,10 +99,20 @@ function sanitizeAnalysisResponse(data: unknown): AnalyzeResponse {
       total_estimated_cost_thb: typeof (obj.package_summary as Record<string, unknown>).total_estimated_cost_thb === 'number' ? (obj.package_summary as Record<string, unknown>).total_estimated_cost_thb as number : undefined,
       procedure_count: typeof (obj.package_summary as Record<string, unknown>).procedure_count === 'number' ? (obj.package_summary as Record<string, unknown>).procedure_count as number : undefined,
     } : undefined,
-    analyzed_user_image: typeof obj.analyzed_user_image === 'string' ? obj.analyzed_user_image : undefined,
-    analyzed_reference_image: typeof obj.analyzed_reference_image === 'string' ? obj.analyzed_reference_image : undefined,
+    analyzed_user_image: toPngDataUrl(obj.analyzed_user_image),
+    analyzed_reference_image: toPngDataUrl(obj.analyzed_reference_image),
     morphed_image: typeof obj.morphed_image === 'string' ? obj.morphed_image : undefined,
   };
+}
+
+function toPngDataUrl(value: unknown): string | undefined {
+  if (typeof value !== 'string' || value.length === 0) {
+    return undefined;
+  }
+
+  return value.startsWith('data:image/')
+    ? value
+    : `data:image/png;base64,${value}`;
 }
 
 function isSerializableRecord(obj: unknown): obj is Record<string, number> {
