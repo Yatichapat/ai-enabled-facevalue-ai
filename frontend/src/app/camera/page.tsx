@@ -9,7 +9,6 @@ export default function CameraPage() {
   const router = useRouter();
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const [isStreamActive, setIsStreamActive] = useState(false);
   const [capturedImage, setCapturedImage] = useState<string | null>(null);
 
   const startCamera = async () => {
@@ -19,7 +18,6 @@ export default function CameraPage() {
       });
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
-        setIsStreamActive(true);
       }
     } catch (error) {
       console.error('Error accessing camera:', error);
@@ -31,7 +29,6 @@ export default function CameraPage() {
     if (videoRef.current && videoRef.current.srcObject) {
       const tracks = (videoRef.current.srcObject as MediaStream).getTracks();
       tracks.forEach(track => track.stop());
-      setIsStreamActive(false);
     }
   };
 
@@ -55,8 +52,9 @@ export default function CameraPage() {
   };
 
   const usePhoto = () => {
-    // Here you would typically upload the photo or pass it to the next step
-    // For now, navigate back to home
+    if (capturedImage) {
+      localStorage.setItem('face_capture_data_url', capturedImage);
+    }
     router.push('/');
   };
 
@@ -125,15 +123,13 @@ export default function CameraPage() {
                       className="w-full h-full object-cover"
                     />
                   </div>
-                  {isStreamActive && (
-                    <button
-                      onClick={capturePhoto}
-                      className="flex items-center justify-center gap-2 bg-[#c0862a] border-[1px] border-[#c0862a] rounded-xl py-3 px-8 shadow-md hover:shadow-lg transition-shadow font-serif text-white text-lg w-full"
-                    >
-                      <Camera size={20} />
-                      Capture Photo
-                    </button>
-                  )}
+                  <button
+                    onClick={capturePhoto}
+                    className="flex items-center justify-center gap-2 bg-[#c0862a] border-[1px] border-[#c0862a] rounded-xl py-3 px-8 shadow-md hover:shadow-lg transition-shadow font-serif text-white text-lg w-full"
+                  >
+                    <Camera size={20} />
+                    Capture Photo
+                  </button>
                 </div>
               )}
             </div>
