@@ -44,12 +44,46 @@ REGION_WEIGHTS = {
     "eyebrows": 0.8,
 }
 
+VISUAL_REGION_ANCHORS = {
+    # These are display pins, not comparison regions. Keep them on recognizable
+    # anatomy so the overlay reads correctly on the original uploaded image.
+    "forehead": [10, 151],
+    "eyes": [468, 473, 33, 133, 362, 263],
+    "nose": [1, 4],
+    "jawline": [172, 136, 150],
+    "chin": [152],
+}
+
 
 def _landmark_array(landmark_payload: dict) -> np.ndarray:
     return np.array(
         [[lm["x"], lm["y"], lm["z"]] for lm in landmark_payload["landmarks"]],
         dtype=np.float32,
     )
+
+
+def _visual_region_anchors(landmark_payload: dict) -> list[dict]:
+    landmarks = landmark_payload.get("landmarks", [])
+    anchors = []
+
+    for region_name, indices in VISUAL_REGION_ANCHORS.items():
+        valid_landmarks = [landmarks[index] for index in indices if index < len(landmarks)]
+
+        if not valid_landmarks:
+            continue
+
+        anchor_x = float(np.mean([point["x"] for point in valid_landmarks]))
+        anchor_y = float(np.mean([point["y"] for point in valid_landmarks]))
+
+        anchors.append(
+            {
+                "region": region_name,
+                "x": max(0.0, min(1.0, anchor_x)),
+                "y": max(0.0, min(1.0, anchor_y)),
+            }
+        )
+
+    return anchors
 
 
 def _normalize_landmarks(points: np.ndarray) -> np.ndarray:
@@ -288,8 +322,15 @@ def compare_structures(user_landmarks: dict, ref_landmarks: dict) -> dict:
         Dict with 'overall_similarity' and 'regions' (deviations per region)
     """
     if not user_landmarks or not ref_landmarks:
-        return {"overall_similarity": 0.0, "regions": {}, "region_details": {}, "mean_deviation": 0.0}
+        return {
+            "overall_similarity": 0.0,
+            "regions": {},
+            "region_details": {},
+            "mean_deviation": 0.0,
+            "face_region_anchors": [],
+        }
 
+    face_region_anchors = _visual_region_anchors(user_landmarks)
     user_pts = _normalize_landmarks(_landmark_array(user_landmarks))
     ref_pts = _normalize_landmarks(_landmark_array(ref_landmarks))
     quality = {
@@ -342,4 +383,5 @@ def compare_structures(user_landmarks: dict, ref_landmarks: dict) -> dict:
         "average_difference": overall_distance,
         "alignment": alignment,
         "quality": quality,
+        "face_region_anchors": face_region_anchors,
     }
