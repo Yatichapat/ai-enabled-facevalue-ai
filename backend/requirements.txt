@@ -1,7 +1,8 @@
 fastapi
 uvicorn
 python-multipart
-opencv-python-headless
-numpy
+opencv-contrib-python==4.11.0.86
+numpy<2
 pandas
 Pillow
+mediapipe==0.10.21
