@@ -80,10 +80,12 @@ async def analyze_faces(
     ref_bytes = await reference_image.read()
 
     user_img = validate_image(user_bytes)
-    ref_img = validate_image(ref_bytes)
+    if user_img is None:
+        raise HTTPException(status_code=400, detail="User image rejected: Invalid image format or no face detected")
 
-    if user_img is None or ref_img is None:
-        raise HTTPException(status_code=400, detail="Invalid image format or no face detected")
+    ref_img = validate_image(ref_bytes)
+    if ref_img is None:
+        raise HTTPException(status_code=400, detail="Reference image rejected: Invalid image format or no face detected")
 
     # 2. Enhance input images, reject bad pose/quality, and re-detect on cropped ROIs
     user_img, user_display_img, user_landmarks, user_quality = _prepare_face(user_img, "User")

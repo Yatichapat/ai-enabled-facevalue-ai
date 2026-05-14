@@ -2,7 +2,7 @@
 
 import React, { useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, CloudUpload, X } from 'lucide-react';
+import { ArrowLeft, CloudUpload } from 'lucide-react';
 import Navbar from '../components/Navbar';
 
 export default function UploadPage() {

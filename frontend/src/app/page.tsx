@@ -1,11 +1,20 @@
 'use client';
 
-import { Camera, CloudUpload, X } from 'lucide-react';
+import { AlertCircle, Camera, CheckCircle2, CloudUpload, Loader2, X } from 'lucide-react';
 import React, { useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Navbar from './components/Navbar';
 import { analyzeFaces, type AnalyzeResponse } from './lib/api';
 import ResultView from './components/ResultView';
+
+type UploadMessage = {
+  type: 'success' | 'error' | 'info';
+  text: string;
+};
+
+const getUploadPhotoLabel = (type: 'face' | 'reference') => (
+  type === 'face' ? 'Your photo' : 'Reference photo'
+);
 
 export default function Home() {
   const router = useRouter();
@@ -20,6 +29,7 @@ export default function Home() {
   const [uploadType, setUploadType] = useState<'face' | 'reference'>('face');
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysisError, setAnalysisError] = useState<string | null>(null);
+  const [uploadMessage, setUploadMessage] = useState<UploadMessage | null>(null);
   const [analysisResult, setAnalysisResult] = useState<AnalyzeResponse | null>(null);
 
   const clearStoredUploadImages = () => {
@@ -36,6 +46,7 @@ export default function Home() {
     setPendingPreview(null);
     setShowPreview(false);
     setAnalysisError(null);
+    setUploadMessage(null);
     setAnalysisResult(null);
     clearStoredUploadImages();
     if (fileInputRef.current) {
@@ -116,11 +127,18 @@ export default function Home() {
           setFaceFile(capturedFile);
           setFaceDataUrl(capturedData);
         } else {
-          alert('The captured image looked invalid (too dark). Please take another photo.');
+          setUploadMessage({
+            type: 'error',
+            text: 'Your photo has an issue: The captured image looked invalid or too dark. Please take another photo.',
+          });
         }
       } catch {
         setFaceFile(null);
         setFaceDataUrl(null);
+        setUploadMessage({
+          type: 'error',
+          text: 'Your photo has an issue: The captured image could not be loaded. Please take another photo.',
+        });
       }
       localStorage.removeItem('face_capture_data_url');
     };
@@ -133,6 +151,11 @@ export default function Home() {
     if (file) {
       const validTypes = ['image/png', 'image/jpeg'];
       if (validTypes.includes(file.type)) {
+        setAnalysisError(null);
+        setUploadMessage({
+          type: 'success',
+          text: `${getUploadPhotoLabel(uploadType)} is ready to preview: ${file.name}.`,
+        });
         setPendingFile(file);
         
         const reader = new FileReader();
@@ -142,7 +165,17 @@ export default function Home() {
         reader.readAsDataURL(file);
         setShowPreview(true);
       } else {
-        alert('Please select a PNG or JPG file');
+        setPendingFile(null);
+        setPendingPreview(null);
+        setShowPreview(false);
+        setAnalysisError(null);
+        setUploadMessage({
+          type: 'error',
+          text: `${getUploadPhotoLabel(uploadType)} has an issue: Unsupported file format. Please upload a PNG or JPG image.`,
+        });
+        if (fileInputRef.current) {
+          fileInputRef.current.value = '';
+        }
       }
     }
   };
@@ -155,11 +188,20 @@ export default function Home() {
     if (uploadType === 'face') {
       setFaceFile(pendingFile);
       setFaceDataUrl(pendingPreview);
+      setUploadMessage({
+        type: 'success',
+        text: 'Your photo was added successfully.',
+      });
     } else {
       setReferenceFile(pendingFile);
       setReferenceDataUrl(pendingPreview);
+      setUploadMessage({
+        type: 'success',
+        text: 'Reference photo was added successfully.',
+      });
     }
 
+    setAnalysisError(null);
     setPendingFile(null);
     setPendingPreview(null);
     setShowPreview(false);
@@ -179,25 +221,31 @@ export default function Home() {
 
   const openFileUpload = (type: 'face' | 'reference') => {
     setUploadType(type);
+    setAnalysisError(null);
+    setUploadMessage(null);
     fileInputRef.current?.click();
   };
 
   const handleStartAnalyzing = async () => {
     if (!faceFile || !referenceFile) {
       setAnalysisError('Please upload both your face image and a reference image first.');
+      setUploadMessage(null);
       return;
     }
 
     setAnalysisError(null);
+    setUploadMessage({ type: 'info', text: 'Analyzing both images now.' });
     setAnalysisResult(null);
     setIsAnalyzing(true);
 
     try {
       const result = await analyzeFaces(faceFile, referenceFile);
       setAnalysisResult(result);
+      setUploadMessage({ type: 'success', text: 'Prediction result is ready.' });
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Unable to analyze right now';
       setAnalysisError(message);
+      setUploadMessage(null);
     } finally {
       setIsAnalyzing(false);
     }
@@ -319,13 +367,39 @@ export default function Home() {
               <button
                 onClick={handleStartAnalyzing}
                 disabled={isAnalyzing}
-                className="cursor-pointer bg-white border-[1px] border-[#a4947f] rounded-2xl py-4 w-[280px] sm:w-[400px] md:w-[500px] shadow-md hover:shadow-lg transition-shadow font-serif text-[#8f6d54] text-2xl tracking-wide flex justify-center mx-auto disabled:opacity-60 disabled:cursor-not-allowed"
+                className="cursor-pointer bg-white border-[1px] border-[#a4947f] rounded-2xl py-4 w-[280px] sm:w-[400px] md:w-[500px] shadow-md hover:shadow-lg transition-shadow font-serif text-[#8f6d54] text-2xl tracking-wide flex items-center justify-center gap-3 mx-auto disabled:opacity-60 disabled:cursor-not-allowed"
               >
+                {isAnalyzing && <Loader2 size={22} className="animate-spin" />}
                 {isAnalyzing ? 'Analyzing...' : 'Start Analyzing'}
               </button>
 
+              {uploadMessage && (
+                <div
+                  role={uploadMessage.type === 'error' ? 'alert' : 'status'}
+                  className={`mt-6 flex w-full max-w-xl items-start gap-3 rounded-lg border px-4 py-3 text-sm font-medium ${
+                    uploadMessage.type === 'error'
+                      ? 'border-red-200 bg-red-50 text-red-700'
+                      : uploadMessage.type === 'success'
+                        ? 'border-green-200 bg-green-50 text-green-700'
+                        : 'border-[#e7d9c8] bg-[#fff7ef] text-[#8f6d54]'
+                  }`}
+                >
+                  {uploadMessage.type === 'error' ? (
+                    <AlertCircle size={18} className="mt-0.5 shrink-0" />
+                  ) : uploadMessage.type === 'success' ? (
+                    <CheckCircle2 size={18} className="mt-0.5 shrink-0" />
+                  ) : (
+                    <Loader2 size={18} className="mt-0.5 shrink-0 animate-spin" />
+                  )}
+                  <span>{uploadMessage.text}</span>
+                </div>
+              )}
+
               {analysisError && (
-                <p className="mt-6 text-sm text-red-600 font-medium">{analysisError}</p>
+                <div role="alert" className="mt-6 flex w-full max-w-xl items-start gap-3 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700">
+                  <AlertCircle size={18} className="mt-0.5 shrink-0" />
+                  <span>{analysisError}</span>
+                </div>
               )}
             </>
           )}

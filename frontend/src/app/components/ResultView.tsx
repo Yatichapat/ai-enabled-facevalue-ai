@@ -322,7 +322,7 @@ export default function ResultView({ faceImageUrl, referenceImageUrl, analysisRe
               <div className="flex-1 mx-4 mt-5">
                 <div className="h-3 md:h-4 w-full bg-[#e2d5d5] rounded-full overflow-hidden relative">
                   <div 
-                    className="absolute right-0 top-0 h-full bg-[#e9a13b] rounded-full transition-all duration-[1500ms] ease-out"
+                    className="absolute left-0 top-0 h-full bg-[#e9a13b] rounded-full transition-all duration-[1500ms] ease-out"
                     style={{ width: featuresInView ? `${feature.score}%` : '0%' }}
                   />
                 </div>

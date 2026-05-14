@@ -1,9 +1,9 @@
 # FaceValue AI
 
-FaceValue AI has two parts:
+FaceValue AI is an AI-assisted facial analysis system designed to help users compare their facial structure with a desired reference face and explore possible cosmetic procedure insights. The project combines facial landmark detection, structural comparison, procedure mapping, face morphing visualization, and price estimation to support pre-consultation planning for cosmetic procedures.
 
-- `backend`: FastAPI service for image validation, MediaPipe face landmarks, comparison, and procedure recommendations.
-- `frontend`: Next.js app for uploading/capturing photos and viewing results.
+This is a prototype and is not medical advice.
+
 
 ## Requirements
 
@@ -12,16 +12,14 @@ FaceValue AI has two parts:
 
 ## Install
 
-Open two terminals from the project root.
-
-### Backend
+Backend:
 
 ```powershell
 cd backend
 pip install -r requirements.txt
 ```
 
-### Frontend
+Frontend:
 
 ```powershell
 cd frontend
@@ -30,62 +28,47 @@ npm install
 
 ## Run
 
-### Start the backend
+Start the backend:
 
 ```powershell
 cd backend
 python -m uvicorn main:app --host 127.0.0.1 --port 8000
 ```
 
-Backend URL:
-
-```text
-http://127.0.0.1:8000
-```
-
-### Start the frontend
+Start the frontend:
 
 ```powershell
 cd frontend
 npm run dev
 ```
 
-Frontend URL:
+Open:
 
 ```text
 http://localhost:3000
 ```
 
-## Use the App
+The frontend uses this backend by default:
 
-1. Open `http://localhost:3000`.
-2. Upload or capture your face photo.
-3. Upload a reference face photo.
-4. Click `Start Analyzing`.
+```text
+http://localhost:8000
+```
 
-The frontend calls the backend at `http://localhost:8000` by default. To use a different backend URL, set:
+To use another backend URL:
 
 ```powershell
 $env:NEXT_PUBLIC_BACKEND_URL="http://127.0.0.1:8000"
+npm run dev
 ```
 
-## Backend API
 
-### Health Check
+Health check:
 
 ```http
 GET /
 ```
 
-Response:
-
-```json
-{
-  "message": "FaceValue AI API is running!"
-}
-```
-
-### Analyze Faces
+Analyze two faces:
 
 ```http
 POST /analysis/analyze
@@ -94,131 +77,69 @@ Content-Type: multipart/form-data
 
 Form fields:
 
-- `user_image`: PNG or JPG image of the user's face.
+- `user_image`: PNG or JPG face image.
 - `reference_image`: PNG or JPG reference face image.
 
 Example response:
 
 ```json
 {
-  "similarity_score": 87.4,
-  "average_difference": 12.6,
-  "mean_deviation": 12.6,
+  "similarity_score": 87.06,
+  "average_difference": 12.94,
+  "mean_deviation": 12.94,
   "alignment": {
     "applied": true,
     "anchor_count": 11,
-    "used_anchor_count": 10,
-    "median_anchor_residual": 0.012,
-    "scale": 1.03
-  },
-  "quality": {
-    "user": {
-      "available": true,
-      "roll_degrees": 1.8,
-      "horizontal_center_drift": 0.03,
-      "vertical_balance": 0.08,
-      "warnings": []
-    },
-    "reference": {
-      "available": true,
-      "roll_degrees": -0.9,
-      "horizontal_center_drift": 0.02,
-      "vertical_balance": 0.07,
-      "warnings": []
-    }
-  },
-  "input_quality": {
-    "user": {
-      "initial": {
-        "accepted": true,
-        "reasons": [],
-        "warnings": [],
-        "metrics": {
-          "mean_luminance": 118.2,
-          "contrast": 48.5,
-          "dark_ratio": 0.04,
-          "bright_ratio": 0.01,
-          "sharpness": 92.7,
-          "face_width_px": 420.0,
-          "face_height_px": 520.0,
-          "face_area_ratio": 0.18,
-          "roll_degrees": 1.8,
-          "nose_eye_offset": 0.08,
-          "nose_mouth_offset": 0.12,
-          "eye_width_ratio": 0.91,
-          "face_side_ratio": 0.86
-        }
-      },
-      "processed": {
-        "accepted": true,
-        "reasons": [],
-        "warnings": [],
-        "metrics": {}
-      }
-    },
-    "reference": {
-      "initial": {
-        "accepted": true,
-        "reasons": [],
-        "warnings": [],
-        "metrics": {}
-      },
-      "processed": {
-        "accepted": true,
-        "reasons": [],
-        "warnings": [],
-        "metrics": {}
-      }
-    }
+    "used_anchor_count": 8,
+    "median_anchor_residual": 0.013,
+    "scale": 1.024
   },
   "deviation_by_region": {
-    "forehead": 9.2,
-    "left_eye": 7.4,
-    "right_eye": 8.1,
-    "nose": 14.3,
-    "mouth": 10.8,
-    "jawline": 16.5,
-    "cheeks": 11.9,
-    "chin": 13.1,
-    "eyebrows": 8.7
+    "forehead": 7.27,
+    "left_eye": 12.84,
+    "right_eye": 7.87,
+    "nose": 6.42,
+    "mouth": 15.1,
+    "jawline": 6.39,
+    "cheeks": 8.84,
+    "chin": 20.33,
+    "eyebrows": 35.37
   },
   "region_differences": {
-    "nose": {
-      "average_difference": 14.3,
-      "trimmed_landmark_difference": 12.8,
-      "raw_landmark_difference": 13.4,
-      "median_landmark_difference": 12.1,
-      "max_difference": 24.9,
-      "shape_difference": 18.7,
-      "landmark_count": 20
+    "chin": {
+      "average_difference": 20.33,
+      "shape_difference": 69.83,
+      "landmark_count": 24
     }
   },
   "face_region_anchors": [
     {
       "region": "forehead",
-      "x": 0.5,
-      "y": 0.14
+      "x": 0.525,
+      "y": 0.291
     },
     {
       "region": "eyes",
-      "x": 0.5,
-      "y": 0.28
+      "x": 0.512,
+      "y": 0.456
     }
   ],
   "procedures": [
     {
-      "procedure": "Fillers (Jawline)",
-      "region": "jawline",
-      "deviation": 16.5,
-      "threshold": 12,
-      "priority": 68.75,
-      "benefit": "Adds definition to jawline",
-      "price": 650.0
+      "procedure": "Chin Fillers",
+      "region": "chin",
+      "deviation": 20.33,
+      "priority": 100.0,
+      "benefit": "Non-surgical chin enhancement",
+      "price": 500.0
     }
   ],
   "package_summary": {
-    "type": "single",
-    "total": 650.0
+    "type": "package",
+    "procedures_count": 7,
+    "subtotal": 6900.0,
+    "discount": 345.0,
+    "total": 6555.0
   },
   "analyzed_user_image": "base64_png_string",
   "analyzed_reference_image": "base64_png_string",
@@ -226,29 +147,30 @@ Example response:
 }
 ```
 
-Notes:
+API responses from `/analysis/analyze` are saved in for:
 
-- `analyzed_user_image` and `analyzed_reference_image` are cropped PNG images encoded as base64 strings.
-- `similarity_score` is `100 - average_difference`, clamped between `0` and `100`.
-- `input_quality` explains whether the photo passed quality and pose checks.
-- `face_region_anchors` gives normalized positions for the frontend overlay labels.
-
-Common error responses:
-
-```json
-{
-  "detail": "Invalid image format or no face detected"
-}
+```text
+backend/api_responses/
 ```
 
-```json
-{
-  "detail": "User image rejected: Face is not front-facing enough. Use a straight-on photo, not a side view."
-}
+## MediaPipe AI Source
+
+This app uses Google's MediaPipe Face Mesh for facial landmark detection.
+
+Installed package:
+
+```text
+mediapipe==0.10.21
 ```
 
-```json
-{
-  "detail": "Could not detect face in reference image"
-}
+Local integration:
+
+```text
+backend/app/services/landmark_detector.py
 ```
+
+Sources:
+
+- https://ai.google.dev/edge/mediapipe/solutions/vision/face_landmarker
+- https://github.com/google-ai-edge/mediapipe/blob/master/docs/solutions/face_mesh.md
+- https://github.com/google-ai-edge/mediapipe

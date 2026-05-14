@@ -35,6 +35,7 @@ pip-log.txt
 # Logs
 *.log
 logs/
+backend/api_responses/
 
 # Jupyter
 .ipynb_checkpoints/

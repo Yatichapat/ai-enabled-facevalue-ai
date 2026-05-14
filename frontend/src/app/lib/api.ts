@@ -45,10 +45,16 @@ export async function analyzeFaces(userImage: File, referenceImage: File): Promi
   formData.append("user_image", userImage);
   formData.append("reference_image", referenceImage);
 
-  const response = await fetch(`${getBackendBaseUrl()}/analysis/analyze`, {
-    method: "POST",
-    body: formData,
-  });
+  let response: Response;
+
+  try {
+    response = await fetch(`${getBackendBaseUrl()}/analysis/analyze`, {
+      method: "POST",
+      body: formData,
+    });
+  } catch {
+    throw new Error("Unable to reach the analysis service. Please check that the backend is running and try again.");
+  }
 
   if (!response.ok) {
     let detail = "Analysis request failed";
@@ -62,13 +68,71 @@ export async function analyzeFaces(userImage: File, referenceImage: File): Promi
       // Keep generic fallback when backend does not return JSON.
     }
 
-    throw new Error(detail);
+    throw new Error(toUserFacingApiError(detail, response.status));
   }
 
-  const data = await response.json();
+  let data: unknown;
+
+  try {
+    data = await response.json();
+  } catch {
+    throw new Error("The analysis service returned an unreadable response. Please try again.");
+  }
   
   // Sanitize the response to remove non-serializable objects
-  return sanitizeAnalysisResponse(data);
+  const result = sanitizeAnalysisResponse(data);
+
+  if (!hasPredictionResult(result)) {
+    throw new Error("The analysis completed, but no prediction result was returned. Please try another image pair.");
+  }
+
+  return result;
+}
+
+function toUserFacingApiError(detail: string, status: number): string {
+  const normalizedDetail = detail.toLowerCase();
+  const photoLabel = getPhotoLabel(normalizedDetail);
+  const prefix = photoLabel ? `${photoLabel} has an issue: ` : "";
+  const backendReason = detail
+    .replace(/^(user|reference) image rejected:\s*/i, "")
+    .trim();
+
+  if (status === 400 || normalizedDetail.includes("invalid image format")) {
+    return `${prefix}Unsupported or invalid image file. Please upload a clear PNG or JPG image.`;
+  }
+
+  if (
+    status === 422 ||
+    normalizedDetail.includes("could not detect face") ||
+    normalizedDetail.includes("no face detected")
+  ) {
+    return `${prefix}No face was detected clearly enough. Please upload a front-facing photo with good lighting.`;
+  }
+
+  return photoLabel && backendReason
+    ? `${prefix}${backendReason}`
+    : detail || "Analysis request failed. Please try again.";
+}
+
+function getPhotoLabel(normalizedDetail: string): string | null {
+  if (normalizedDetail.includes("user image")) {
+    return "Your photo";
+  }
+
+  if (normalizedDetail.includes("reference image")) {
+    return "Reference photo";
+  }
+
+  return null;
+}
+
+function hasPredictionResult(result: AnalyzeResponse): boolean {
+  return (
+    typeof result.similarity_score === 'number' ||
+    Boolean(result.region_differences && Object.keys(result.region_differences).length > 0) ||
+    Boolean(result.deviation_by_region && Object.keys(result.deviation_by_region).length > 0) ||
+    Boolean(result.procedures && result.procedures.length > 0)
+  );
 }
 
 function sanitizeAnalysisResponse(data: unknown): AnalyzeResponse {
